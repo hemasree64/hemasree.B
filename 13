@@ -1,0 +1,130 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define TABLE_SIZE 10
+#define LOAD_FACTOR_THRESHOLD 0.7
+
+typedef struct Node {
+    int key;
+    struct Node* next;
+} Node;
+
+typedef struct {
+    int* table;
+    int size;
+    int count;
+} HashTableOpen;
+
+typedef struct {
+    Node** table;
+    int size;
+} HashTableClosed;
+
+// Hash functions
+int hashFunction(int key, int size) {
+    return key % size;
+}
+
+int doubleHash(int key, int size) {
+    return 7 - (key % 7);
+}
+
+// Open Addressing Methods
+void initHashTableOpen(HashTableOpen* ht) {
+    ht->size = TABLE_SIZE;
+    ht->count = 0;
+    ht->table = (int*)malloc(ht->size * sizeof(int));
+    for (int i = 0; i < ht->size; i++) {
+        ht->table[i] = -1;
+    }
+}
+
+void insertOpen(HashTableOpen* ht, int key) {
+    if ((float)ht->count / ht->size > LOAD_FACTOR_THRESHOLD) {
+        printf("Load factor exceeded. Rehashing needed.\n");
+        // Rehashing logic should be added here
+        return;
+    }
+
+    int index = hashFunction(key, ht->size);
+    int i = 0;
+
+    while (ht->table[(index + i) % ht->size] != -1) {
+        i++;
+    }
+    ht->table[(index + i) % ht->size] = key;
+    ht->count++;
+}
+
+void displayOpen(HashTableOpen* ht) {
+    for (int i = 0; i < ht->size; i++) {
+        if (ht->table[i] != -1) {
+            printf("%d: %d\n", i, ht->table[i]);
+        } else {
+            printf("%d: NULL\n", i);
+        }
+    }
+}
+
+// Closed Addressing Methods
+void initHashTableClosed(HashTableClosed* ht) {
+    ht->size = TABLE_SIZE;
+    ht->table = (Node**)malloc(ht->size * sizeof(Node*));
+    for (int i = 0; i < ht->size; i++) {
+        ht->table[i] = NULL;
+    }
+}
+
+void insertClosed(HashTableClosed* ht, int key) {
+    int index = hashFunction(key, ht->size);
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    newNode->key = key;
+    newNode->next = ht->table[index];
+    ht->table[index] = newNode;
+}
+
+void displayClosed(HashTableClosed* ht) {
+    for (int i = 0; i < ht->size; i++) {
+        printf("%d: ", i);
+        Node* temp = ht->table[i];
+        while (temp) {
+            printf("%d -> ", temp->key);
+            temp = temp->next;
+        }
+        printf("NULL\n");
+    }
+}
+
+// Main function
+int main() {
+    HashTableOpen htOpen;
+    initHashTableOpen(&htOpen);
+    insertOpen(&htOpen, 5);
+    insertOpen(&htOpen, 15);
+    insertOpen(&htOpen, 25);
+    displayOpen(&htOpen);
+
+    printf("\n");
+
+    HashTableClosed htClosed;
+    initHashTableClosed(&htClosed);
+    insertClosed(&htClosed, 5);
+    insertClosed(&htClosed, 15);
+    insertClosed(&htClosed, 25);
+    displayClosed(&htClosed);
+
+    // Free allocated memory
+    free(htOpen.table);
+    for (int i = 0; i < htClosed.size; i++) {
+        Node* temp = htClosed.table[i];
+        while (temp) {
+            Node* toDelete = temp;
+            temp = temp->next;
+            free(toDelete);
+        }
+    }
+    free(htClosed.table);
+
+    return 0;
+}
